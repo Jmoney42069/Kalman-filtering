@@ -14,12 +14,13 @@ kalman_pairs/
   strategy.py        # z-score, thresholded signal, backtest
   plots.py           # matplotlib helpers for the chapter's figures
 
-dashboard/app.py             # Streamlit dashboard with sliders
-scripts/run_experiments.py   # reproduces EWA-EWC and KO-PEP figures (PNG)
+dashboard/app.py                 # Streamlit dashboard with sliders
+scripts/run_experiments.py       # reproduces EWA-EWC and KO-PEP figures (PNG)
+scripts/run_dax_experiments.py   # DAX 30 / GER30 demo: ALV-MUV2, EOAN-RWE, BMW-MBG
 scripts/build_demo_dashboard.py  # builds figures/demo_dashboard.html
-notebooks/pairs_trading.ipynb  # annotated walkthrough with inline plots
-tests/test_kalman.py          # sanity tests on synthetic data
-figures/                       # generated PNGs and interactive HTML demo
+notebooks/pairs_trading.ipynb    # annotated walkthrough with inline plots
+tests/test_kalman.py             # sanity tests on synthetic data
+figures/                          # generated PNGs and interactive HTML demo
 ```
 
 ## Setup
@@ -68,6 +69,15 @@ makes the spread noisy and transaction costs eat the P&L.
 
 `load_pair` tries Yahoo Finance first. When the environment blocks
 network access, it falls back to `synthetic_pair`, which generates
-deterministic cointegrated series that mimic EWA-EWC (stable) and
-KO-PEP (with a 2020 regime shift) so the experiments are reproducible
-offline.
+deterministic cointegrated series for these built-in pairs:
+
+| Pair | Story |
+| --- | --- |
+| `EWA-EWC` | Australian / Canadian ETFs, stable cointegration (textbook 15.6.4) |
+| `KO-PEP` | Coca-Cola / Pepsi, 2020 COVID dislocation (textbook 15.6.4) |
+| `ALV.DE-MUV2.DE` | **DAX**: Allianz / Munich Re, stable insurer pair |
+| `EOAN.DE-RWE.DE` | **DAX**: E.ON / RWE, 2019 asset-swap regime shift |
+| `BMW.DE-MBG.DE` | **DAX**: BMW / Mercedes-Benz, 2022 Daimler spin-off |
+| `SAP.DE-SIE.DE` | **DAX**: SAP / Siemens, weak cointegration (different sectors) |
+
+Run `python scripts/run_dax_experiments.py` for the German market demo.

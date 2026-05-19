@@ -194,13 +194,19 @@ def build_combined_figure(pairs_data: dict[str, dict]) -> go.Figure:
     combined.update_layout(
         title=pair_names[0],
         updatemenus=[dict(
-            type="buttons",
-            direction="right",
+            type="dropdown",
+            direction="down",
             x=0.0, xanchor="left",
-            y=1.14, yanchor="top",
+            y=1.13, yanchor="top",
             buttons=buttons,
-            pad=dict(r=8, l=8, t=4, b=4),
+            pad=dict(r=10, l=10, t=6, b=6),
             showactive=True,
+            bgcolor="#ffffff",
+            bordercolor="#ccc",
+        )],
+        annotations=list(base_fig.layout.annotations) + [dict(
+            text="Select pair:", x=-0.005, xref="paper", y=1.135, yref="paper",
+            xanchor="right", yanchor="middle", showarrow=False, font=dict(size=12, color="#555"),
         )],
     )
     return combined
@@ -208,8 +214,12 @@ def build_combined_figure(pairs_data: dict[str, dict]) -> go.Figure:
 
 def main() -> None:
     pairs_data = {
-        "EWA-EWC (stable cointegrated pair)": compute("EWA", "EWC"),
-        "KO-PEP (regime shift in 2020)": compute("KO", "PEP"),
+        "Allianz - Munich Re  (DAX, stable insurers)": compute("ALV.DE", "MUV2.DE"),
+        "E.ON - RWE  (DAX, 2019 asset-swap regime shift)": compute("EOAN.DE", "RWE.DE"),
+        "BMW - Mercedes-Benz  (DAX, 2022 Daimler spin-off)": compute("BMW.DE", "MBG.DE"),
+        "SAP - Siemens  (DAX, weak cointegration)": compute("SAP.DE", "SIE.DE"),
+        "EWA - EWC  (US ETFs, textbook stable pair)": compute("EWA", "EWC"),
+        "KO - PEP  (US, 2020 COVID dislocation)": compute("KO", "PEP"),
     }
 
     fig = build_combined_figure(pairs_data)

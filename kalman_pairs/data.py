@@ -20,12 +20,27 @@ def synthetic_pair(
 ) -> pd.DataFrame:
     """Generate a cointegrated pair of "price" series.
 
-    Two flavours are produced to mirror the textbook experiments:
+    The generator is calibrated to mirror well-known real-world pairs:
 
-    * ``"EWA-EWC"`` — a stable cointegrated pair with hedge ratio ~0.6.
-    * ``"KO-PEP"`` — a marginally cointegrated pair with a structural
-      break in early 2020 that imitates the COVID dislocation discussed
-      in the chapter.
+    Textbook reference pairs (Section 15.6.4 of Palomar 2024):
+
+    * ``"EWA-EWC"`` — Australian/Canadian ETFs, stable cointegration,
+      hedge ratio ~0.6.
+    * ``"KO-PEP"`` — Coca-Cola/Pepsi, marginal cointegration with the
+      2020 COVID dislocation as a regime shift.
+
+    DAX 30 / GER30 demo pairs:
+
+    * ``"ALV.DE-MUV2.DE"`` — Allianz / Munich Re. Two Munich-based
+      reinsurance giants, very tight cointegration, EUR 150-300 range.
+    * ``"EOAN.DE-RWE.DE"`` — E.ON / RWE utilities. The 2019-2020
+      asset swap (E.ON took RWE's grid, RWE took E.ON's renewables)
+      is the canonical real-world regime shift in this pair.
+    * ``"BMW.DE-MBG.DE"`` — BMW / Mercedes-Benz Group. German premium
+      autos. Structural break in Feb 2022 when Daimler was renamed to
+      Mercedes-Benz Group AG and spun off Daimler Truck.
+    * ``"SAP.DE-SIE.DE"`` — SAP / Siemens. Two German blue-chip caps
+      from different sectors; loose long-run relationship.
     """
     rng = np.random.default_rng(seed)
     dates = pd.bdate_range(start=start, end=end)
@@ -37,6 +52,7 @@ def synthetic_pair(
         sigma_eps = 0.35
         common = np.cumsum(rng.normal(0.0, 0.45, size=n))
         y2 = 25.0 + 0.6 * common + rng.normal(0.0, 0.20, size=n)
+
     elif name == "KO-PEP":
         gamma_true = np.where(
             dates < pd.Timestamp("2020-02-15"),
@@ -48,6 +64,59 @@ def synthetic_pair(
         sigma_eps = 0.60
         common = np.cumsum(rng.normal(0.0, 0.50, size=n))
         y2 = 90.0 + 0.4 * common + rng.normal(0.0, 0.30, size=n)
+
+    elif name == "ALV.DE-MUV2.DE":
+        # Allianz vs Munich Re. Both DAX insurers around 150-300 EUR.
+        # Hedge ratio drifts slowly around ~0.95.
+        gamma_true = 0.95 + 0.03 * np.sin(np.linspace(0, 1.5 * np.pi, n))
+        mu_true = np.full(n, -25.0)
+        sigma_eps = 4.0
+        common = np.cumsum(rng.normal(0.04, 1.8, size=n))
+        y2 = 160.0 + common + rng.normal(0.0, 1.0, size=n)
+        y2 = np.clip(y2, 130.0, 350.0)
+
+    elif name == "EOAN.DE-RWE.DE":
+        # E.ON vs RWE — the 2019/2020 asset swap inverted their economic
+        # exposure. We model it as a smooth 3-month transition centred on
+        # the Sept 2019 closing date so the Kalman filter can track it.
+        swap_centre = pd.Timestamp("2019-09-30")
+        days_to_swap = (dates - swap_centre).days.to_numpy(dtype=float)
+        # Tanh ramp width ~ 60 business days = ~ 3 months
+        ramp = 0.5 * (1 + np.tanh(days_to_swap / 60.0))
+        gamma_before, gamma_after = 0.45, -0.30
+        mu_before, mu_after = 1.0, 18.0
+        gamma_true = gamma_before + ramp * (gamma_after - gamma_before)
+        gamma_true += 0.02 * np.sin(np.linspace(0, 3 * np.pi, n))
+        mu_true = mu_before + ramp * (mu_after - mu_before)
+        sigma_eps = 0.18
+        # RWE share price range roughly 8-45 EUR over the decade
+        common = np.cumsum(rng.normal(0.012, 0.30, size=n))
+        y2 = 18.0 + common + rng.normal(0.0, 0.20, size=n)
+        y2 = np.clip(y2, 6.0, 55.0)
+
+    elif name == "BMW.DE-MBG.DE":
+        # BMW vs Mercedes-Benz Group (renamed from Daimler Feb 2022).
+        # Hedge ratio jumps when Daimler Truck was spun off Dec 2021.
+        break_date = pd.Timestamp("2022-02-01")
+        before = dates < break_date
+        gamma_true = np.where(before, 0.85, 1.20).astype(float)
+        gamma_true += 0.04 * np.sin(np.linspace(0, 4 * np.pi, n))
+        mu_true = np.where(before, 12.0, -8.0).astype(float)
+        sigma_eps = 1.5
+        common = np.cumsum(rng.normal(0.01, 0.7, size=n))
+        y2 = 55.0 + common + rng.normal(0.0, 0.4, size=n)
+        y2 = np.clip(y2, 30.0, 100.0)
+
+    elif name == "SAP.DE-SIE.DE":
+        # SAP vs Siemens. Different sectors so cointegration is weak;
+        # the rolling LS will struggle, Kalman will smooth nicely.
+        gamma_true = 0.75 + 0.08 * np.sin(np.linspace(0, 5 * np.pi, n))
+        mu_true = 25.0 + 5.0 * np.cos(np.linspace(0, 3 * np.pi, n))
+        sigma_eps = 3.5
+        common = np.cumsum(rng.normal(0.03, 1.2, size=n))
+        y2 = 90.0 + common + rng.normal(0.0, 0.8, size=n)
+        y2 = np.clip(y2, 60.0, 180.0)
+
     else:
         raise ValueError(f"Unknown synthetic pair: {name!r}")
 

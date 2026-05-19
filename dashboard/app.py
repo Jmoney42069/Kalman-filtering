@@ -54,13 +54,21 @@ st.caption(
 
 with st.sidebar:
     st.header("Data")
+    PAIR_PRESETS = {
+        "EWA-EWC (US, stable cointegration)": ("EWA", "EWC"),
+        "KO-PEP (US, 2020 dislocation)": ("KO", "PEP"),
+        "Allianz vs Munich Re (DAX, stable insurers)": ("ALV.DE", "MUV2.DE"),
+        "E.ON vs RWE (DAX, 2019 asset-swap regime shift)": ("EOAN.DE", "RWE.DE"),
+        "BMW vs Mercedes-Benz (DAX, 2022 Daimler spin-off)": ("BMW.DE", "MBG.DE"),
+        "SAP vs Siemens (DAX, weak cointegration)": ("SAP.DE", "SIE.DE"),
+    }
     pair = st.selectbox(
         "Pair",
-        options=["EWA-EWC", "KO-PEP"],
-        index=0,
-        help="EWA-EWC is stable; KO-PEP has a regime shift in early 2020.",
+        options=list(PAIR_PRESETS.keys()),
+        index=2,
+        help="DAX 30 / GER30 pairs include three classic German trades.",
     )
-    ticker_a, ticker_b = pair.split("-")
+    ticker_a, ticker_b = PAIR_PRESETS[pair]
     start = st.date_input("Start", value=pd.Timestamp("2013-01-01")).isoformat()
     end = st.date_input("End", value=pd.Timestamp("2022-12-31")).isoformat()
 
@@ -150,9 +158,9 @@ def run_models(
 with st.spinner("Loading data..."):
     prices = get_prices(ticker_a, ticker_b, start, end)
 
-source = "real Yahoo data" if (prices.index[0].year >= 2013 and len(prices) > 1500 and prices[ticker_a].std() > 1) else "data"
 st.caption(f"Loaded {len(prices)} rows for **{pair}** "
-           f"from {prices.index[0].date()} to {prices.index[-1].date()}.")
+           f"from {prices.index[0].date()} to {prices.index[-1].date()}. "
+           f"Tickers: `{ticker_a}` / `{ticker_b}`.")
 
 with st.spinner("Running estimators..."):
     res = run_models(prices, ticker_a, ticker_b, alpha_basic, alpha_mom, rho, t_ls, ls_window, use_partial)
