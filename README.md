@@ -14,10 +14,12 @@ kalman_pairs/
   strategy.py        # z-score, thresholded signal, backtest
   plots.py           # matplotlib helpers for the chapter's figures
 
-scripts/run_experiments.py   # reproduces EWA-EWC and KO-PEP experiments
+dashboard/app.py             # Streamlit dashboard with sliders
+scripts/run_experiments.py   # reproduces EWA-EWC and KO-PEP figures (PNG)
+scripts/build_demo_dashboard.py  # builds figures/demo_dashboard.html
 notebooks/pairs_trading.ipynb  # annotated walkthrough with inline plots
 tests/test_kalman.py          # sanity tests on synthetic data
-figures/                       # generated PNGs (after running the script)
+figures/                       # generated PNGs and interactive HTML demo
 ```
 
 ## Setup
@@ -29,7 +31,14 @@ pip install -r requirements.txt
 ## Run
 
 ```bash
-# Reproduce Figures 15.21-15.26 (writes PNGs to figures/)
+# Interactive dashboard with sliders for alpha, rho, z-window, threshold
+streamlit run dashboard/app.py
+
+# Or a self-contained interactive HTML (no server, no install)
+python scripts/build_demo_dashboard.py
+open figures/demo_dashboard.html
+
+# Reproduce Figures 15.21-15.26 as static PNGs
 python scripts/run_experiments.py
 
 # Run the tests
